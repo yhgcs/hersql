@@ -11,8 +11,9 @@ import (
 )
 
 type SidecarConfig struct {
-	Log    *log.Config     `yaml:"log"`
-	Server *sidecar.Config `yaml:"server"`
+	Log     *log.Config                `yaml:"log"`
+	Server  *sidecar.Config            `yaml:"server"`
+	Servers map[string]*sidecar.Config `yaml:"servers"`
 }
 
 type TransportConfig struct {

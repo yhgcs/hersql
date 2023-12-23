@@ -25,21 +25,45 @@ func main() {
 	}
 
 	log.Init(conf.Log)
-
-	srv, err := sidecar.NewServer(conf.Server)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "server error: "+err.Error())
-		os.Exit(1)
-	}
-
-	go func() {
-		if err = srv.ListenAndServe(); err != nil {
+	//需要退出的服务器
+	serverOff := make(chan *sidecar.Server, len(conf.Servers))
+	//已退出的服务器，用map存储
+	serverOffMap := make(map[string]bool, len(conf.Servers))
+	//配置map循环
+	for name, serverConf := range conf.Servers {
+		srv, err := sidecar.NewServer(serverConf)
+		if err != nil {
 			fmt.Fprintln(os.Stderr, "server error: "+err.Error())
 			os.Exit(1)
 		}
+		go func() {
+			if err = srv.ListenAndServe(); err != nil {
+				fmt.Fprintln(os.Stderr, "server error: "+err.Error())
+				serverOff <- srv
+				serverOffMap[name] = true
+			}
+		}()
+	}
+	//serverOff 通道中有值，说明有服务器退出
+	go func() {
+		for {
+			select {
+			case srv := <-serverOff:
+				fmt.Println("serverOff:", srv)
+				ctx, _ := context.WithTimeout(context.Background(), 3000*time.Millisecond)
+				srv.Shutdown(ctx)
+			}
+		}
 	}()
-
-	waitGracefulStop(srv)
+	//如果所有服务器都退出了，那么退出程序
+	for {
+		if len(serverOffMap) == len(conf.Servers) {
+			fmt.Println("all server off")
+			log.Shutdown()
+			os.Exit(1)
+		}
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func waitGracefulStop(srv *sidecar.Server) {

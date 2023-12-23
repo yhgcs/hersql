@@ -3,6 +3,15 @@ server:
   addr: 127.0.0.1:3306
   transport_addr: http://127.0.0.1:8001
 
+servers:
+  s1:
+    addr: 127.0.0.1:3306
+    transport_addr: http://127.0.0.1:8001
+
+  s2:
+    addr: 127.0.0.1:3306
+    transport_addr: http://127.0.0.1:8001
+
 log:
   # Stdout log level debug/info/warn/error/dpanic/panic/fatal
   stdout_level: debug
